@@ -8,6 +8,7 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
 import edu.wpi.first.util.sendable.SendableRegistry;
+import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
@@ -20,12 +21,19 @@ import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveSparkMax;
 import frc.robot.subsystems.shooter.PIDShooter;
 import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.pneumatics.Pneumatics;
+import frc.robot.subsystems.compresser.Compresser;
 
 /**
  * This is a demo program showing the use of the DifferentialDrive class. Runs the motors with
  * arcade steering.
  */
 public class Robot extends TimedRobot {
+
+  // private final Compresser m_compresser = new Compresser(7);
+
+  
+  private final Pneumatics m_pneumatics = new Pneumatics(0, 1);
   // grabs drive2's drive function
   private final Drive m_drive = new Drive(1, 2, 3, 4);
   // grabs Shooters Shooter function
@@ -52,6 +60,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void robotInit() {
+
     // We need to invert one side of the drivetrain so that positive voltages
     // result in both sides moving forward. Depending on how your robot's
     // gearbox is constructed, you might have to invert the left side instead.
@@ -61,6 +70,7 @@ public class Robot extends TimedRobot {
     m_controller.leftTrigger(0.1).whileTrue(m_shooter.intakePositioner());
     m_controller.rightTrigger(0.1).whileTrue(m_shooter.exitPositioner());
     m_controller.rightBumper().onTrue(m_shooter.toggleFlywheel());
+    m_controller.a().onTrue(m_pneumatics.BoyKisser());
   }
 
   // runs command schedualer
@@ -85,6 +95,13 @@ public class Robot extends TimedRobot {
     // and backward, and the X turns left and right.
     // System.out.println("Test");
     m_drive.arcade();
+    // System.out.println(m_pneumatics.getSolinoidChannels());
+    // System.out.println(m_compresser.GetEnabled());
     // System.out.println(m_controller.getLeftY() + " " + m_controller.getLeftX());
+  }
+
+  @Override
+  public void autonomousPeriodic() {
+    m_drive.autoDrive();
   }
 }

@@ -4,9 +4,11 @@ import java.util.function.Supplier;
 
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.revrobotics.CANSparkMax;
+// import com.revrobotics.CANSparkMax;
 
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Drive extends SubsystemBase {
@@ -37,6 +39,14 @@ public class Drive extends SubsystemBase {
     public void periodic() {
     }
 
+    public void autonomousDriveFunc(boolean on_off) {
+        if (on_off) {
+            m_driveTrain.arcadeDrive(1, 0);
+        } else {
+            m_driveTrain.arcadeDrive(0, 0);
+        }
+    }
+
     public void arcade() {
         m_driveTrain.arcadeDrive(m_xControl.get(), m_rotationControl.get());
     }
@@ -46,5 +56,8 @@ public class Drive extends SubsystemBase {
         m_rotationControl = rotationControl;
     }
 
+    public Command autoDrive() {
+        return Commands.runOnce(() -> autonomousDriveFunc(true)).andThen(Commands.waitSeconds(2)).andThen(Commands.runOnce(() -> autonomousDriveFunc(false)));
+    }
     
 }
