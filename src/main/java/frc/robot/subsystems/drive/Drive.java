@@ -6,6 +6,7 @@ import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.hardware.TalonFX;
 // import com.revrobotics.CANSparkMax;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -23,6 +24,9 @@ public class Drive extends SubsystemBase {
     private Supplier<Double> m_xControl;
     private Supplier<Double> m_rotationControl;
 
+    private double m_curX;
+    private double m_curRot;
+
     public Drive(int leftLeaderPort, int leftFollowerPort, int rightLeaderPort, int rightFollowerPort) {
         m_leftLeader = new TalonFX(leftLeaderPort);
         m_leftFollower = new TalonFX(leftFollowerPort);
@@ -37,6 +41,34 @@ public class Drive extends SubsystemBase {
 
     @Override
     public void periodic() {
+        double desiredX = 0.0;
+        double desiredRot = 0.0;
+        if (m_xControl != null) {
+            desiredX = m_xControl.get();
+        }
+        if (m_rotationControl != null) {
+            desiredRot = m_rotationControl.get();
+        }
+
+        double errorX = Math.abs(desiredX - m_curX);
+        double errorRot = Math.abs(desiredRot - m_curRot);
+        
+        if (errorX > 0.02 && m_curX < desiredX) {
+            m_curX += 0.02;
+        } else if (errorX > 0.02 && m_curX > desiredX) {
+            m_curX -= 0.02;
+        }
+
+        if (errorRot > 0.02 && m_curRot < desiredRot) {
+            m_curRot += 0.02;
+        } else if (errorRot > 0.02 && m_curRot > desiredRot) {
+            m_curRot -= 0.02;
+        }
+
+        m_curX = MathUtil.clamp(m_curX, -1.0, 1.0);
+        m_curRot = MathUtil.clamp(m_curRot, -0.5, 0.5);
+
+        // arcade();
     }
 
     public void autonomousDriveFunc(boolean on_off) {
@@ -48,7 +80,7 @@ public class Drive extends SubsystemBase {
     }
 
     public void arcade() {
-        m_driveTrain.arcadeDrive(m_xControl.get(), m_rotationControl.get());
+        m_driveTrain.arcadeDrive(m_curRot, m_curX);
     }
 
     public void linkController(Supplier<Double> xControl, Supplier<Double> rotationControl) {

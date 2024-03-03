@@ -19,7 +19,6 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveSparkMax;
-import frc.robot.subsystems.shooter.PIDShooter;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.pneumatics.Pneumatics;
 import frc.robot.subsystems.compresser.Compresser;
@@ -30,10 +29,10 @@ import frc.robot.subsystems.compresser.Compresser;
  */
 public class Robot extends TimedRobot {
 
-  // private final Compresser m_compresser = new Compresser(7);
+  private final Compresser m_compresser = new Compresser(7);
 
   
-  private final Pneumatics m_pneumatics = new Pneumatics(0, 1);
+  private final Pneumatics m_pneumatics = new Pneumatics(2, 3);
   // grabs drive2's drive function
   private final Drive m_drive = new Drive(1, 2, 3, 4);
   // grabs Shooters Shooter function
@@ -41,6 +40,9 @@ public class Robot extends TimedRobot {
   // asings the controller
   private final CommandXboxController m_controller = new CommandXboxController(0);
   // sets up for command schedualer?
+  private Command autonomousCommandDrive;
+  private Command autonomousCommandShootAndDrive;
+  private Command autonomousCommandShootAndDriveReverse;
   private Command autonomousCommand;
 
   public Robot() {
@@ -51,7 +53,29 @@ public class Robot extends TimedRobot {
   // ?
   @Override
   public void autonomousInit() {
-    autonomousCommand = Commands.none();
+    autonomousCommandDrive = Commands.runOnce(() -> {
+        m_drive.linkController(() -> -0.6, () -> 0.0);
+      }
+    ).andThen(Commands.waitSeconds(4)).andThen(Commands.runOnce(() -> {
+      m_drive.linkController(() -> 0.0, () -> 0.0);
+    }));
+
+    autonomousCommandShootAndDrive = m_shooter.toggleFlywheel().andThen(Commands.waitSeconds(2)).
+    andThen(Commands.runOnce(() -> m_shooter.setPositionerVoltage(8.0))).andThen(Commands.waitSeconds(1)).andThen(m_shooter.toggleFlywheel())
+    .andThen(Commands.runOnce(() -> m_shooter.setPositionerVoltage(0.0)))
+    .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.7, () -> 0.0))).andThen(Commands.waitSeconds(1))
+    .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.0, () -> -0.4))).andThen(Commands.waitSeconds(2))
+    .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.7, () -> 0.0))).andThen(Commands.waitSeconds(3)).andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.0, () -> 0.0)));
+
+    autonomousCommandShootAndDriveReverse = m_shooter.toggleFlywheel().andThen(Commands.waitSeconds(2)).
+    andThen(Commands.runOnce(() -> m_shooter.setPositionerVoltage(8.0))).andThen(Commands.waitSeconds(1)).andThen(m_shooter.toggleFlywheel())
+    .andThen(Commands.runOnce(() -> m_shooter.setPositionerVoltage(0.0)))
+    .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.6, () -> 0.0))).andThen(Commands.waitSeconds(1))
+    .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.0, () -> 0.4))).andThen(Commands.waitSeconds(2))
+    .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.7, () -> 0.0))).andThen(Commands.waitSeconds(3)).andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.0, () -> 0.0)));
+
+
+    autonomousCommand = autonomousCommandShootAndDriveReverse;
 
     if (autonomousCommand != null) {
       autonomousCommand.schedule();
@@ -66,11 +90,7 @@ public class Robot extends TimedRobot {
     // gearbox is constructed, you might have to invert the left side instead.
 
     // uses the linkController function in Drive2 to set the control variables
-    m_drive.linkController(() -> -m_controller.getLeftX(), () -> m_controller.getLeftY());
-    m_controller.leftTrigger(0.1).whileTrue(m_shooter.intakePositioner());
-    m_controller.rightTrigger(0.1).whileTrue(m_shooter.exitPositioner());
-    m_controller.rightBumper().onTrue(m_shooter.toggleFlywheel());
-    m_controller.a().onTrue(m_pneumatics.BoyKisser());
+
   }
 
   // runs command schedualer
@@ -85,6 +105,12 @@ public class Robot extends TimedRobot {
     if (autonomousCommand != null) {
       autonomousCommand.cancel();
     }
+
+    m_drive.linkController(() -> m_controller.getLeftY(), () -> -m_controller.getLeftX());
+    m_controller.leftTrigger(0.1).whileTrue(m_shooter.intakePositioner());
+    m_controller.rightTrigger(0.1).whileTrue(m_shooter.exitPositioner());
+    m_controller.rightBumper().onTrue(m_shooter.toggleFlywheel());
+    m_controller.leftBumper().whileTrue(m_pneumatics.scoreAmp());
   }
 
   // it starts arcade drive. LEARN TO READ.
@@ -102,6 +128,6 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousPeriodic() {
-    m_drive.autoDrive();
+    m_drive.arcade();
   }
 }

@@ -14,7 +14,7 @@ public class Pneumatics extends SubsystemBase {
     public Pneumatics( int ampForwardPort, int ampReversePort) {
         // m_climber = new DoubleSolenoid(PneumaticsModuleType.REVPH, climberForwardPort, climberReversePort);
         
-        m_ampScorer = new DoubleSolenoid(PneumaticsModuleType.REVPH, ampForwardPort, ampReversePort);
+        m_ampScorer = new DoubleSolenoid(7, PneumaticsModuleType.CTREPCM, ampForwardPort, ampReversePort);
         m_ampScorer.set(DoubleSolenoid.Value.kReverse);
     }
 
@@ -37,14 +37,8 @@ public class Pneumatics extends SubsystemBase {
     //     m_climber.set(DoubleSolenoid.Value.kOff);
     // }
 
-    public void setAmpScorer(boolean up) {
-        // true: up
-        // false: down
-        if (up) {
-            m_ampScorer.set(DoubleSolenoid.Value.kForward);
-        } else {
-            m_ampScorer.set(DoubleSolenoid.Value.kReverse);
-        }
+    public void setAmpScorer() {
+        m_ampScorer.set(DoubleSolenoid.Value.kForward);
     }
 
     public void stopAmpScorer() {
@@ -62,7 +56,8 @@ public class Pneumatics extends SubsystemBase {
     // }
 
     public Command scoreAmp() {
-        return Commands.runEnd(() -> setAmpScorer(true), () -> setAmpScorer(false)).andThen(Commands.waitSeconds(1)).andThen(Commands.runOnce(this::stopAmpScorer));
+        return Commands.runEnd(() -> setAmpScorer(), () -> stopAmpScorer());
+        // .andThen(Commands.waitSeconds(1)).andThen(Commands.runOnce(this::stopAmpScorer));
     }
 
     public Command BoyKisser() {
