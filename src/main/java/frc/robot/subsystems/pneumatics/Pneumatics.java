@@ -7,60 +7,43 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Pneumatics extends SubsystemBase {
-    DoubleSolenoid m_climber;
-    DoubleSolenoid m_ampScorer;
+    DoubleSolenoid m_pneumatic;
 
     // int climberForwardPort, int climberReversePort,
-    public Pneumatics( int ampForwardPort, int ampReversePort) {
+    public Pneumatics(int pneumaticForwardPort, int pneumaticReversePort, int PMCPort) {
         // m_climber = new DoubleSolenoid(PneumaticsModuleType.REVPH, climberForwardPort, climberReversePort);
         
-        m_ampScorer = new DoubleSolenoid(7, PneumaticsModuleType.CTREPCM, ampForwardPort, ampReversePort);
-        m_ampScorer.set(DoubleSolenoid.Value.kReverse);
+        m_pneumatic = new DoubleSolenoid(PMCPort, PneumaticsModuleType.CTREPCM, pneumaticForwardPort, pneumaticReversePort);
+        m_pneumatic.set(DoubleSolenoid.Value.kReverse);
     }
 
-    public void getSolinoidChannels() {
-        m_ampScorer.set(DoubleSolenoid.Value.kForward);
+    public void setPneumatic() {
+        m_pneumatic.set(DoubleSolenoid.Value.kForward);
     }
 
-    // public void setClimber(boolean forward) {
-    //     // true: forward
-    //     // false: reverse
-    //     if (forward) {
-    //         m_climber.set(DoubleSolenoid.Value.kForward);
-    //     } else {
-    //         m_climber.set(DoubleSolenoid.Value.kReverse);
-    //     }
-            
-    // }
-
-    // public void stopClimber() {
-    //     m_climber.set(DoubleSolenoid.Value.kOff);
-    // }
-
-    public void setAmpScorer() {
-        m_ampScorer.set(DoubleSolenoid.Value.kForward);
+    public void stopPneumatic() {
+        m_pneumatic.set(DoubleSolenoid.Value.kReverse);
     }
 
-    public void stopAmpScorer() {
-        m_ampScorer.set(DoubleSolenoid.Value.kReverse);
+    public Command holdToggle() {
+        return Commands.runEnd(() -> setPneumatic(), () -> stopPneumatic());
     }
 
-    // public Command climbUp() {
-    //     return Commands.runEnd(() -> setClimber(true),
-    //             this::stopClimber);
-    // }
+    public Command toggleGears() {
+        return Commands.run(() -> {
+            stopPneumatic();
+        });
+    }
 
-    // public Command climbDown() {
-    //     return Commands.runEnd(() -> setClimber(false),
-    //             this::stopClimber);
-    // }
+    public Command setPneumaticCommand(boolean up) {
+        if (up) {
+            return Commands.runOnce(() -> setPneumatic());
+        } else {
+            return Commands.runOnce(() -> stopPneumatic());
+        }
+    }
 
     public Command scoreAmp() {
-        return Commands.runEnd(() -> setAmpScorer(), () -> stopAmpScorer());
-        // .andThen(Commands.waitSeconds(1)).andThen(Commands.runOnce(this::stopAmpScorer));
-    }
-
-    public Command BoyKisser() {
-        return Commands.runOnce(() -> getSolinoidChannels());
+        return Commands.waitSeconds(1).andThen(setPneumaticCommand(true)).andThen(Commands.waitSeconds(2).andThen(setPneumaticCommand(false)));
     }
 }

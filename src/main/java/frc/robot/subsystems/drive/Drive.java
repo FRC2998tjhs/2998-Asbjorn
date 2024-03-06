@@ -56,7 +56,7 @@ public class Drive extends SubsystemBase {
         if (errorX > 0.02 && m_curX < desiredX) {
             m_curX += 0.02;
         } else if (errorX > 0.02 && m_curX > desiredX) {
-            m_curX -= 0.02;
+            m_curX -= 0.06;
         }
 
         if (errorRot > 0.02 && m_curRot < desiredRot) {
