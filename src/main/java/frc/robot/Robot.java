@@ -138,7 +138,7 @@ public class Robot extends TimedRobot {
     // That means that the Y axis drives forward
     // and backward, and the X turns left and right.
     // System.out.println("Test");
-    m_drive.arcade();
+    m_drive.arcadeAutoGearshift();
     // System.out.println(m_pneumatics.getSolinoidChannels());
     // System.out.println(m_compresser.GetEnabled());
     // System.out.println(m_controller.getLeftY() + " " + m_controller.getLeftX());
@@ -146,6 +146,6 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousPeriodic() {
-    m_drive.arcade();
+    m_drive.arcadeAutoGearshift();
   }
 }

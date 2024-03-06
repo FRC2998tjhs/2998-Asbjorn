@@ -2,11 +2,14 @@ package frc.robot.subsystems.drive;
 
 import java.util.function.Supplier;
 
+import javax.swing.text.StyledEditorKit;
+
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.hardware.TalonFX;
 // import com.revrobotics.CANSparkMax;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -20,6 +23,7 @@ public class Drive extends SubsystemBase {
     private TalonFX m_rightFollower;
 
     private DifferentialDrive m_driveTrain;
+    private DifferentialDriveKinematics m_test;
 
     private Supplier<Double> m_xControl;
     private Supplier<Double> m_rotationControl;
@@ -41,6 +45,9 @@ public class Drive extends SubsystemBase {
 
     @Override
     public void periodic() {
+        // System.out.print("leftLeader get: ");
+        // System.out.println(m_leftLeader.get());
+
         double desiredX = 0.0;
         double desiredRot = 0.0;
         if (m_xControl != null) {
@@ -56,7 +63,7 @@ public class Drive extends SubsystemBase {
         if (errorX > 0.02 && m_curX < desiredX) {
             m_curX += 0.02;
         } else if (errorX > 0.02 && m_curX > desiredX) {
-            m_curX -= 0.06;
+            m_curX -= 0.02;
         }
 
         if (errorRot > 0.02 && m_curRot < desiredRot) {
@@ -76,10 +83,11 @@ public class Drive extends SubsystemBase {
             m_driveTrain.arcadeDrive(1, 0);
         } else {
             m_driveTrain.arcadeDrive(0, 0);
+            
         }
     }
 
-    public void arcade() {
+    public void arcadeAutoGearshift() {
         m_driveTrain.arcadeDrive(m_curRot, m_curX);
     }
 
