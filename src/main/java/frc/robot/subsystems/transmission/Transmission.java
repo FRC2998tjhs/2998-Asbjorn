@@ -1,13 +1,15 @@
+package frc.robot.subsystems.transmission;
+
 public class Transmission {
     public class TransmissionReturn {
-        Double X;
-        Double Y;
-        boolean switchToHigh = false;
-        boolean switchToLow = false;
+        public Double x;
+        public Double y;
+        public boolean shiftToHigh = false;
+        public boolean shiftToLow = false;
 
         public TransmissionReturn(Double x, Double y) {
-            X = x;
-            Y = y;
+            this.x = x;
+            this.y = y;
         }
     }
 
