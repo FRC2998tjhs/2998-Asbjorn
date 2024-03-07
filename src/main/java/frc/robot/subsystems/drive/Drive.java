@@ -35,6 +35,7 @@ public class Drive extends SubsystemBase {
 
     private Transmission transmission;
     private Pneumatics gearShift;
+    private boolean powerToMotorEnabled = true;
 
     public Drive(int leftLeaderPort, int leftFollowerPort, int rightLeaderPort, int rightFollowerPort, Pneumatics gearShift) {
         this.gearShift = gearShift;
@@ -49,67 +50,61 @@ public class Drive extends SubsystemBase {
 
         m_driveTrain = new DifferentialDrive(m_leftLeader::set, m_rightLeader::set);
 
-        transmission = new Transmission();
+        transmission = new Transmission(0.95, 0.1, 2.27);
     }
 
     @Override
     public void periodic() {
-        // System.out.print("leftLeader get: ");
-        // System.out.println(m_leftLeader.get());
+        double tickSize = 0.04;
 
         double desiredY = 0.0;
         if (controllerY != null) {
             desiredY = controllerY.get();
         }
-        currentY = tickControlTowards(currentY, desiredY, 0.02);
-
-        // double errorY = Math.abs(desiredY - currentY);
-        // if (errorY > 0.02 && currentY < desiredY) {
-        //     currentY += 0.02;
-        // } else if (errorY > 0.02 && currentY > desiredY) {
-        //     currentY -= 0.02;
-        // }
-        // currentY = MathUtil.clamp(currentY, -1.0, 1.0);
+        currentY = tickControlTowards(currentY, desiredY, tickSize);
 
         double desiredX = 0.0;
         if (controllerX != null) {
             desiredX = controllerX.get();
         }
-        double errorX = Math.abs(desiredX - currentX);
-        if (errorX > 0.02 && currentX < desiredX) {
-            currentX += 0.02;
-        } else if (errorX > 0.02 && currentX > desiredX) {
-            currentX -= 0.02;
-        }
-        currentX = MathUtil.clamp(currentX, -0.5, 0.5);
-
-        // arcade();
+        currentX = tickControlTowards(currentX, desiredX, tickSize);
     }
 
     // TODO(shelbyd): Is this the desired bahavior?
     private double tickControlTowards(double current, double desired, double tickSize) {
+        if (Math.abs(desired) < 0.1) {
+            desired = 0.;
+        }
+
         var direction = Math.signum(desired - current);
-        return MathUtil.clamp(current + direction * tickSize, -desired, desired);
+        var result = MathUtil.clamp(current + direction * tickSize, -Math.abs(desired), Math.abs(desired));
+        return result;
     }
 
     // TODO(shelbyd): Can we do this in our own periodic?
     public void arcadeAutoGearshift() {
-        var desiredMovement = transmission.transmissioning(currentX, currentY, m_leftLeader.get(), m_rightLeader.get());
-        m_driveTrain.arcadeDrive(desiredMovement.x, desiredMovement.y);
+        var desiredMovement = transmission.robotControl(currentX, currentY, -m_leftLeader.get(), m_rightLeader.get());
+        if (powerToMotorEnabled) {
+            m_driveTrain.arcadeDrive(desiredMovement.x, desiredMovement.y);
+        } else {
+            // m_driveTrain.arcadeDrive(0., 0.);
+        }
 
         if (desiredMovement.shiftToHigh) {
-            shiftToHigh().schedule();
+            shiftPneumatics(true).schedule();
         } else if (desiredMovement.shiftToLow) {
-            shiftToLow().schedule();
+            shiftPneumatics(false).schedule();
         }
     }
 
-    private Command shiftToHigh() {
-        return gearShift.setPneumaticCommand(true);
-    }
-
-    private Command shiftToLow() {
-        return gearShift.setPneumaticCommand(false);
+    private Command shiftPneumatics(boolean on) {
+        return Commands.sequence(
+            gearShift.setPneumaticCommand(on),
+            Commands.waitSeconds(0.01),
+            Commands.runOnce(() -> this.powerToMotorEnabled = false),
+            Commands.waitSeconds(0.03),
+            Commands.runOnce(() -> this.powerToMotorEnabled = true)
+        );
     }
 
     public void linkController(Supplier<Double> controllerX, Supplier<Double> controllerY) {

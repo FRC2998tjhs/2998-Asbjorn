@@ -46,7 +46,7 @@ public class Shooter extends SubsystemBase {
         return Commands.runOnce(() -> {
             m_flywheelEnabled = !m_flywheelEnabled;
             if (m_flywheelEnabled) {
-                setFlywheelVoltage(12);
+                setFlywheelVoltage(11.5);
             } else {
                 setFlywheelVoltage(0);
             }

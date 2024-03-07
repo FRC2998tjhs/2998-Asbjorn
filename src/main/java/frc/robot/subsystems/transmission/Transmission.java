@@ -1,5 +1,7 @@
 package frc.robot.subsystems.transmission;
 
+import edu.wpi.first.math.MathUtil;
+
 public class Transmission {
     public class TransmissionReturn {
         public Double x;
@@ -13,8 +15,48 @@ public class Transmission {
         }
     }
 
-    public TransmissionReturn transmissioning(Double controllerX, Double controllerY, double leftSpeed,
+    private double highShiftThreshold;
+    private double lowShiftThreshold;
+    private boolean isHighGear;
+    private double lowToHighGearRatio;
+    
+    public Transmission(double highShiftThreshold, double lowShiftThreshold, double lowToHighGearRatio) {
+        this.highShiftThreshold = highShiftThreshold;
+        this.lowShiftThreshold = lowShiftThreshold;
+        this.lowToHighGearRatio = lowToHighGearRatio;
+    }
+
+    public TransmissionReturn robotControl(Double controllerX, Double controllerY, double leftSpeed,
             double rightSpeed) {
-        return new TransmissionReturn(controllerX, controllerY);
+        double powerY = MathUtil.clamp(controllerY, -1., 1.);
+        double powerX = MathUtil.clamp(controllerX, -1., 1.);
+
+        if (!isHighGear) {
+            powerY *= lowToHighGearRatio;
+            powerX *= lowToHighGearRatio;
+        }
+
+        var transmissionReturn = new TransmissionReturn(powerX, powerY);
+
+        var turning = Math.signum(leftSpeed) != Math.signum(rightSpeed);
+
+        var maxSpeed = Math.max(Math.abs(leftSpeed), Math.abs(rightSpeed));
+        boolean shouldBeHigh = maxSpeed > highShiftThreshold;
+        boolean shouldBeLow = maxSpeed < lowShiftThreshold;
+
+        if (turning) {
+            return transmissionReturn;
+        }
+
+        if (shouldBeHigh && !isHighGear) {
+            transmissionReturn.shiftToHigh = true;
+            isHighGear = true;
+        }
+        if (shouldBeLow && isHighGear) {
+            transmissionReturn.shiftToLow = true;
+            isHighGear = false;
+        }
+
+        return transmissionReturn;
     }
 }

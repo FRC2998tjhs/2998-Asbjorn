@@ -24,9 +24,9 @@ public class Robot extends TimedRobot {
 
   private final Compresser m_compresser = new Compresser(7);
 
-  private final Pneumatics m_gearShift = new Pneumatics(2, 3, 7);
+  private final Pneumatics m_gearShift = new Pneumatics(3, 2, 7);
 
-  private final Pneumatics m_ampPneumatics = new Pneumatics(0, 1, 7);
+  private final Pneumatics m_ampPneumatics = new Pneumatics(1, 0, 7);
 
   // grabs drive2's drive function
   private final Drive m_drive = new Drive(1, 2, 3, 4, m_gearShift);
@@ -140,8 +140,8 @@ public class Robot extends TimedRobot {
 
     m_drive.linkController(() -> -m_controller.getLeftX(), () -> m_controller.getLeftY());
     // TODO(shelbyd): Remove this?
-    m_controller.leftBumper().onTrue(m_gearShift.setPneumaticCommand(true))
-        .onFalse(m_gearShift.setPneumaticCommand(false));
+    // m_controller.leftBumper().onTrue(m_gearShift.setPneumaticCommand(true))
+    //     .onFalse(m_gearShift.setPneumaticCommand(false));
 
     m_controller.leftTrigger(0.1).whileTrue(m_shooter.intakePositioner());
     m_controller.rightTrigger(0.1).whileTrue(m_shooter.exitPositioner());
