@@ -4,43 +4,32 @@
 
 package frc.robot;
 
-import javax.swing.text.html.HTMLEditorKit.LinkController;
-
-import com.revrobotics.CANSparkMax;
-import com.revrobotics.CANSparkLowLevel.MotorType;
-
-import edu.wpi.first.util.sendable.SendableRegistry;
-import edu.wpi.first.wpilibj.DoubleSolenoid;
-import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.drive.DifferentialDrive;
-import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.drive.Drive;
-import frc.robot.subsystems.drive.DriveSparkMax;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.pneumatics.Pneumatics;
 import frc.lib.utils.TunableNumber;
 import frc.robot.subsystems.compresser.Compresser;
 
 /**
- * This is a demo program showing the use of the DifferentialDrive class. Runs the motors with
+ * This is a demo program showing the use of the DifferentialDrive class. Runs
+ * the motors with
  * arcade steering.
  */
 public class Robot extends TimedRobot {
 
   private final Compresser m_compresser = new Compresser(7);
 
-  
-  private final Pneumatics m_ampPneumatics = new Pneumatics(2, 3, 7);
+  private final Pneumatics m_gearShift = new Pneumatics(2, 3, 7);
 
-  private final Pneumatics m_gearShiftPneumatics = new Pneumatics(0, 1, 7);
+  private final Pneumatics m_ampPneumatics = new Pneumatics(0, 1, 7);
 
   // grabs drive2's drive function
-  private final Drive m_drive = new Drive(1, 2, 3, 4);
+  private final Drive m_drive = new Drive(1, 2, 3, 4, m_gearShift);
   // grabs Shooters Shooter function
   private final Shooter m_shooter = new Shooter(5, 6);
   // asings the controller
@@ -58,45 +47,71 @@ public class Robot extends TimedRobot {
     // SendableRegistry.addChild(m_robotDrive, m_rightMotor);
   }
 
-
   public static final TunableNumber kAutonomousMode = new TunableNumber("AutoMode", 1, "AutoMode");
 
   @Override
   public void autonomousInit() {
-    autonomousCommandDrive = Commands.runOnce(() -> {
-        m_drive.linkController(() -> -0.6, () -> 0.0);
-      }
-    ).andThen(Commands.waitSeconds(4)).andThen(Commands.runOnce(() -> {
-      m_drive.linkController(() -> 0.0, () -> 0.0);
-    }));
+    autonomousCommandDrive = Commands.sequence(
+        setDirection(0.0, -0.6),
+        Commands.waitSeconds(4),
+        setDirection(0.0, 0.0));
 
-    autonomousCommandShootAndDrive = m_shooter.toggleFlywheel().andThen(Commands.waitSeconds(2)).
-    andThen(Commands.runOnce(() -> m_shooter.setPositionerVoltage(8.0))).andThen(Commands.waitSeconds(1)).andThen(m_shooter.toggleFlywheel())
-    .andThen(Commands.runOnce(() -> m_shooter.setPositionerVoltage(0.0)))
-    .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.7, () -> 0.0))).andThen(Commands.waitSeconds(1))
-    .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.0, () -> -0.4))).andThen(Commands.waitSeconds(2))
-    .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.7, () -> 0.0))).andThen(Commands.waitSeconds(3)).andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.0, () -> 0.0)));
-    
-    autonomousCommandShoot = Commands.waitSeconds(1).andThen(m_shooter.toggleFlywheel()).andThen(Commands.waitSeconds(2)).
-    andThen(Commands.runOnce(() -> m_shooter.setPositionerVoltage(8.0))).andThen(Commands.waitSeconds(5)).andThen(m_shooter.toggleFlywheel())
-    .andThen(Commands.runOnce(() -> m_shooter.setPositionerVoltage(0.0)));
+    autonomousCommandShootAndDrive = Commands.sequence(
+        m_shooter.toggleFlywheel(),
+        Commands.waitSeconds(2),
+        Commands.runOnce(() -> m_shooter.setPositionerVoltage(8.0)),
+        Commands.waitSeconds(1),
+        m_shooter.toggleFlywheel(),
+        Commands.runOnce(() -> m_shooter.setPositionerVoltage(0.0)),
+        setDirection(0.0, 0.7),
+        Commands.waitSeconds(1),
+        setDirection(-0.4, 0.0),
+        Commands.waitSeconds(2),
+        setDirection(0.0, 0.7),
+        Commands.waitSeconds(3),
+        setDirection(0.0, 0.0));
 
-    autonomousCommandShootAndDriveReverse = m_shooter.toggleFlywheel().andThen(Commands.waitSeconds(2)).
-    andThen(Commands.runOnce(() -> m_shooter.setPositionerVoltage(8.0))).andThen(Commands.waitSeconds(1)).andThen(m_shooter.toggleFlywheel())
-    .andThen(Commands.runOnce(() -> m_shooter.setPositionerVoltage(0.0)))
-    .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.6, () -> 0.0))).andThen(Commands.waitSeconds(1))
-    .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.0, () -> 0.4))).andThen(Commands.waitSeconds(2))
-    .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.7, () -> 0.0))).andThen(Commands.waitSeconds(3)).andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.0, () -> 0.0)));
+    autonomousCommandShoot = Commands.sequence(
+        Commands.waitSeconds(1),
+        m_shooter.toggleFlywheel(),
+        Commands.waitSeconds(2),
+        Commands.runOnce(() -> m_shooter.setPositionerVoltage(8.0)),
+        Commands.waitSeconds(5),
+        m_shooter.toggleFlywheel(),
+        Commands.runOnce(() -> m_shooter.setPositionerVoltage(0.0)));
 
-    autonomousCommandAmp = m_ampPneumatics.setPneumaticCommand(true).andThen(Commands.waitSeconds(2)).andThen(m_ampPneumatics.setPneumaticCommand(false)).andThen(Commands.runOnce(() -> m_drive.linkController(() -> -0.1, () -> 0.5))
-    .andThen(Commands.waitSeconds(2)).andThen(Commands.runOnce(() -> m_drive.linkController(() -> -0.5, () -> 0.0)).andThen(Commands.waitSeconds(4))
-    .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.0, () -> 0.0)))));
+    autonomousCommandShootAndDriveReverse = Commands.sequence(m_shooter.toggleFlywheel(),
+        Commands.waitSeconds(2),
+        Commands.runOnce(() -> m_shooter.setPositionerVoltage(8.0)),
+        Commands.waitSeconds(1),
+        m_shooter.toggleFlywheel(),
+        Commands.runOnce(() -> m_shooter.setPositionerVoltage(0.0)),
+        setDirection(0.0, 0.6),
+        Commands.waitSeconds(1),
+        setDirection(0.4, 0.0),
+        Commands.waitSeconds(2),
+        setDirection(0.0, 0.7),
+        Commands.waitSeconds(3),
+        setDirection(0.0, 0.0));
+
+    autonomousCommandAmp = Commands.sequence(m_gearShift.setPneumaticCommand(true),
+        Commands.waitSeconds(2),
+        m_gearShift.setPneumaticCommand(false),
+        setDirection(0.5, -0.1),
+        Commands.waitSeconds(2),
+        setDirection(0.0, -0.5),
+        Commands.waitSeconds(4),
+        setDirection(0.0, 0.0));
 
     autonomousCommand = autonomousCommandShoot;
 
     if (autonomousCommand != null) {
       autonomousCommand.schedule();
     }
+  }
+
+  private Command setDirection(double x, double y) {
+    return Commands.runOnce(() -> m_drive.linkController(() -> x, () -> y));
   }
 
   @Override
@@ -123,12 +138,16 @@ public class Robot extends TimedRobot {
       autonomousCommand.cancel();
     }
 
-    m_drive.linkController(() -> m_controller.getLeftY(), () -> -m_controller.getLeftX());
+    m_drive.linkController(() -> -m_controller.getLeftX(), () -> m_controller.getLeftY());
+    // TODO(shelbyd): Remove this?
+    m_controller.leftBumper().onTrue(m_gearShift.setPneumaticCommand(true))
+        .onFalse(m_gearShift.setPneumaticCommand(false));
+
     m_controller.leftTrigger(0.1).whileTrue(m_shooter.intakePositioner());
     m_controller.rightTrigger(0.1).whileTrue(m_shooter.exitPositioner());
     m_controller.rightBumper().onTrue(m_shooter.toggleFlywheel());
-    m_controller.leftBumper().onTrue(m_ampPneumatics.setPneumaticCommand(true)).onFalse(m_ampPneumatics.setPneumaticCommand(false));
-    m_controller.y().onTrue(m_gearShiftPneumatics.scoreAmp());
+
+    m_controller.y().onTrue(m_ampPneumatics.scoreAmp());
   }
 
   // it starts arcade drive. LEARN TO READ.
