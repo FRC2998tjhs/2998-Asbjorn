@@ -51,47 +51,67 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousInit() {
-    autonomousCommandDrive = Commands.runOnce(() -> {
-      m_drive.linkController(() -> 0.0, () -> -0.6);
-    }).andThen(Commands.waitSeconds(4)).andThen(Commands.runOnce(() -> {
-      m_drive.linkController(() -> 0.0, () -> 0.0);
-    }));
+    autonomousCommandDrive = Commands.sequence(
+        setDirection(0.0, -0.6),
+        Commands.waitSeconds(4),
+        setDirection(0.0, 0.0));
 
-    autonomousCommandShootAndDrive = m_shooter.toggleFlywheel().andThen(Commands.waitSeconds(2))
-        .andThen(Commands.runOnce(() -> m_shooter.setPositionerVoltage(8.0))).andThen(Commands.waitSeconds(1))
-        .andThen(m_shooter.toggleFlywheel())
-        .andThen(Commands.runOnce(() -> m_shooter.setPositionerVoltage(0.0)))
-        .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.0, () -> 0.7))).andThen(Commands.waitSeconds(1))
-        .andThen(Commands.runOnce(() -> m_drive.linkController(() -> -0.4, () -> 0.0))).andThen(Commands.waitSeconds(2))
-        .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.0, () -> 0.7))).andThen(Commands.waitSeconds(3))
-        .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.0, () -> 0.0)));
+    autonomousCommandShootAndDrive = Commands.sequence(
+        m_shooter.toggleFlywheel(),
+        Commands.waitSeconds(2),
+        Commands.runOnce(() -> m_shooter.setPositionerVoltage(8.0)),
+        Commands.waitSeconds(1),
+        m_shooter.toggleFlywheel(),
+        Commands.runOnce(() -> m_shooter.setPositionerVoltage(0.0)),
+        setDirection(0.0, 0.7),
+        Commands.waitSeconds(1),
+        setDirection(-0.4, 0.0),
+        Commands.waitSeconds(2),
+        setDirection(0.0, 0.7),
+        Commands.waitSeconds(3),
+        setDirection(0.0, 0.0));
 
-    autonomousCommandShoot = Commands.waitSeconds(1).andThen(m_shooter.toggleFlywheel())
-        .andThen(Commands.waitSeconds(2)).andThen(Commands.runOnce(() -> m_shooter.setPositionerVoltage(8.0)))
-        .andThen(Commands.waitSeconds(5)).andThen(m_shooter.toggleFlywheel())
-        .andThen(Commands.runOnce(() -> m_shooter.setPositionerVoltage(0.0)));
+    autonomousCommandShoot = Commands.sequence(
+        Commands.waitSeconds(1),
+        m_shooter.toggleFlywheel(),
+        Commands.waitSeconds(2),
+        Commands.runOnce(() -> m_shooter.setPositionerVoltage(8.0)),
+        Commands.waitSeconds(5),
+        m_shooter.toggleFlywheel(),
+        Commands.runOnce(() -> m_shooter.setPositionerVoltage(0.0)));
 
-    autonomousCommandShootAndDriveReverse = m_shooter.toggleFlywheel().andThen(Commands.waitSeconds(2))
-        .andThen(Commands.runOnce(() -> m_shooter.setPositionerVoltage(8.0))).andThen(Commands.waitSeconds(1))
-        .andThen(m_shooter.toggleFlywheel())
-        .andThen(Commands.runOnce(() -> m_shooter.setPositionerVoltage(0.0)))
-        .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.0, () -> 0.6))).andThen(Commands.waitSeconds(1))
-        .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.4, () -> 0.0))).andThen(Commands.waitSeconds(2))
-        .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.0, () -> 0.7))).andThen(Commands.waitSeconds(3))
-        .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.0, () -> 0.0)));
+    autonomousCommandShootAndDriveReverse = Commands.sequence(m_shooter.toggleFlywheel(),
+        Commands.waitSeconds(2),
+        Commands.runOnce(() -> m_shooter.setPositionerVoltage(8.0)),
+        Commands.waitSeconds(1),
+        m_shooter.toggleFlywheel(),
+        Commands.runOnce(() -> m_shooter.setPositionerVoltage(0.0)),
+        setDirection(0.0, 0.6),
+        Commands.waitSeconds(1),
+        setDirection(0.4, 0.0),
+        Commands.waitSeconds(2),
+        setDirection(0.0, 0.7),
+        Commands.waitSeconds(3),
+        setDirection(0.0, 0.0));
 
-    autonomousCommandAmp = m_gearShift.setPneumaticCommand(true).andThen(Commands.waitSeconds(2))
-        .andThen(m_gearShift.setPneumaticCommand(false))
-        .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.5, () -> -0.1))
-            .andThen(Commands.waitSeconds(2)).andThen(
-                Commands.runOnce(() -> m_drive.linkController(() -> 0.0, () -> -0.5)).andThen(Commands.waitSeconds(4))
-                    .andThen(Commands.runOnce(() -> m_drive.linkController(() -> 0.0, () -> 0.0)))));
+    autonomousCommandAmp = Commands.sequence(m_gearShift.setPneumaticCommand(true),
+        Commands.waitSeconds(2),
+        m_gearShift.setPneumaticCommand(false),
+        setDirection(0.5, -0.1),
+        Commands.waitSeconds(2),
+        setDirection(0.0, -0.5),
+        Commands.waitSeconds(4),
+        setDirection(0.0, 0.0));
 
     autonomousCommand = autonomousCommandShoot;
 
     if (autonomousCommand != null) {
       autonomousCommand.schedule();
     }
+  }
+
+  private Command setDirection(double x, double y) {
+    return Commands.runOnce(() -> m_drive.linkController(() -> x, () -> y));
   }
 
   @Override
