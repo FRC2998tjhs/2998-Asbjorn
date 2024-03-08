@@ -26,8 +26,7 @@ public class Transmission {
         this.lowToHighGearRatio = lowToHighGearRatio;
     }
 
-    public TransmissionReturn robotControl(Double controllerX, Double controllerY, double leftSpeed,
-            double rightSpeed) {
+    public TransmissionReturn robotControl(Double controllerX, Double controllerY) {
         double powerY = MathUtil.clamp(controllerY, -1., 1.);
         double powerX = MathUtil.clamp(controllerX, -1., 1.);
 
@@ -38,9 +37,9 @@ public class Transmission {
 
         var transmissionReturn = new TransmissionReturn(powerX, powerY);
 
-        var turning = Math.signum(leftSpeed) != Math.signum(rightSpeed);
+        var turning = Math.signum(controllerX) != Math.signum(controllerY);
 
-        var maxSpeed = Math.max(Math.abs(leftSpeed), Math.abs(rightSpeed));
+        var maxSpeed = Math.max(Math.abs(powerX), Math.abs(powerY));
         boolean shouldBeHigh = maxSpeed > highShiftThreshold;
         boolean shouldBeLow = maxSpeed < lowShiftThreshold;
 

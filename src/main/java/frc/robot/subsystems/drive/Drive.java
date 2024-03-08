@@ -19,13 +19,13 @@ import frc.robot.subsystems.transmission.Transmission;
 
 public class Drive extends SubsystemBase {
 
-    private TalonFX m_leftLeader;
+    public TalonFX m_leftLeader;
     private TalonFX m_leftFollower;
-    private TalonFX m_rightLeader;
+    public TalonFX m_rightLeader;
     private TalonFX m_rightFollower;
 
-    private DifferentialDrive m_driveTrain;
-    private DifferentialDriveKinematics m_test;
+    // private DifferentialDrive m_driveTrain;
+    // private DifferentialDriveKinematics m_test;
 
     private Supplier<Double> controllerX;
     private Supplier<Double> controllerY;
@@ -48,14 +48,14 @@ public class Drive extends SubsystemBase {
         m_rightFollower = new TalonFX(rightFollowerPort);
         m_rightFollower.setControl(new Follower(rightLeaderPort, false));
 
-        m_driveTrain = new DifferentialDrive(m_leftLeader::set, m_rightLeader::set);
+        // m_driveTrain = new DifferentialDrive(m_leftLeader::set, m_rightLeader::set);
 
         transmission = new Transmission(0.95, 0.1, 2.27);
     }
 
     @Override
     public void periodic() {
-        double tickSize = 0.04;
+        double tickSize = 0.02;
 
         double desiredY = 0.0;
         if (controllerY != null) {
@@ -72,24 +72,40 @@ public class Drive extends SubsystemBase {
 
     // TODO(shelbyd): Is this the desired bahavior?
     private double tickControlTowards(double current, double desired, double tickSize) {
-        if (Math.abs(desired) < 0.1) {
-            desired = 0.;
-        }
+        desired = targetSpeed(desired);
 
         var direction = Math.signum(desired - current);
         var result = MathUtil.clamp(current + direction * tickSize, -Math.abs(desired), Math.abs(desired));
         return result;
     }
 
-    // TODO(shelbyd): Can we do this in our own periodic?
-    public void arcadeAutoGearshift() {
-        var desiredMovement = transmission.robotControl(currentX, currentY, -m_leftLeader.get(), m_rightLeader.get());
-        if (powerToMotorEnabled) {
-            m_driveTrain.arcadeDrive(desiredMovement.x, desiredMovement.y);
-        } else {
-            // m_driveTrain.arcadeDrive(0., 0.);
+    public double targetSpeed(double control) {
+        if (control < 0) {
+            return -targetSpeed(-control);
+        }
+        if (control > 1) {
+            return targetSpeed(1.);
         }
 
+        double deadzone = 0.1;
+        if (control < deadzone) {
+            return 0.;
+        }
+
+        double scaled = (control - deadzone) * (1. / (1. - deadzone));
+        return Math.pow(scaled, 1.5);
+    }
+
+    // TODO(shelbyd): Can we do this in our own periodic?
+    public void arcadeAutoGearshift() {
+        if (!powerToMotorEnabled) {
+            return;
+        }
+        var desiredMovement = transmission.robotControl(currentX, currentY);
+        // m_driveTrain.arcadeDrive(desiredMovement.x, desiredMovement.y);
+        m_leftLeader.set(desiredMovement.y);
+        m_rightLeader.set(desiredMovement.x);
+    
         if (desiredMovement.shiftToHigh) {
             shiftPneumatics(true).schedule();
         } else if (desiredMovement.shiftToLow) {
@@ -101,7 +117,11 @@ public class Drive extends SubsystemBase {
         return Commands.sequence(
             gearShift.setPneumaticCommand(on),
             Commands.waitSeconds(0.01),
-            Commands.runOnce(() -> this.powerToMotorEnabled = false),
+            Commands.runOnce(() -> {
+                this.powerToMotorEnabled = false;
+                m_leftLeader.set(0);
+                m_rightLeader.set(0);
+            }),
             Commands.waitSeconds(0.03),
             Commands.runOnce(() -> this.powerToMotorEnabled = true)
         );
@@ -112,9 +132,8 @@ public class Drive extends SubsystemBase {
         this.controllerY = controllerY;
     }
 
-    public Command autoDrive() {
-        return Commands.runOnce(() -> m_driveTrain.arcadeDrive(1, 0)).andThen(Commands.waitSeconds(2))
-                .andThen(Commands.runOnce(() -> m_driveTrain.arcadeDrive(0, 0)));
-    }
-
+    // public Command autoDrive() {
+    //     return Commands.runOnce(() -> m_driveTrain.arcadeDrive(1, 0)).andThen(Commands.waitSeconds(2))
+    //             .andThen(Commands.runOnce(() -> m_driveTrain.arcadeDrive(0, 0)));
+    // }
 }

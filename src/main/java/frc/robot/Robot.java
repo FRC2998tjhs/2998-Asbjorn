@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.shooter.Shooter;
@@ -34,6 +35,10 @@ public class Robot extends TimedRobot {
   private final Shooter m_shooter = new Shooter(5, 6);
   // asings the controller
   private final CommandXboxController m_controller = new CommandXboxController(0);
+
+  private final CommandJoystick leftController = new CommandJoystick(0);
+  private final CommandJoystick rightController = new CommandJoystick(1);
+
   // sets up for command schedualer?
   private Command autonomousCommandDrive;
   private Command autonomousCommandShootAndDrive;
@@ -138,16 +143,16 @@ public class Robot extends TimedRobot {
       autonomousCommand.cancel();
     }
 
-    m_drive.linkController(() -> -m_controller.getLeftX(), () -> m_controller.getLeftY());
+    m_drive.linkController(() -> leftController.getY(), () -> -rightController.getY() * 1.1);
     // TODO(shelbyd): Remove this?
     // m_controller.leftBumper().onTrue(m_gearShift.setPneumaticCommand(true))
     //     .onFalse(m_gearShift.setPneumaticCommand(false));
 
-    m_controller.leftTrigger(0.1).whileTrue(m_shooter.intakePositioner());
-    m_controller.rightTrigger(0.1).whileTrue(m_shooter.exitPositioner());
-    m_controller.rightBumper().onTrue(m_shooter.toggleFlywheel());
+    // m_controller.leftTrigger(0.1).whileTrue(m_shooter.intakePositioner());
+    // m_controller.rightTrigger(0.1).whileTrue(m_shooter.exitPositioner());
+    // m_controller.rightBumper().onTrue(m_shooter.toggleFlywheel());
 
-    m_controller.y().onTrue(m_ampPneumatics.scoreAmp());
+    // m_controller.y().onTrue(m_ampPneumatics.scoreAmp());
   }
 
   // it starts arcade drive. LEARN TO READ.
@@ -161,6 +166,7 @@ public class Robot extends TimedRobot {
     // System.out.println(m_pneumatics.getSolinoidChannels());
     // System.out.println(m_compresser.GetEnabled());
     // System.out.println(m_controller.getLeftY() + " " + m_controller.getLeftX());
+
   }
 
   @Override
