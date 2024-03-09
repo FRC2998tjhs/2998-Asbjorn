@@ -4,7 +4,7 @@ public class DriverProfile {
     public static final DriverProfile current = spencer();
 
     // In % max speed / s;
-    public double maxAcceleration = 1.;
+    public double maxAcceleration = 1.5;
     public double deadzone = 0.15;
     public double precisionExponent = 2.;
 

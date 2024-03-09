@@ -37,11 +37,11 @@ public class Robot extends TimedRobot {
   private final CommandJoystick rightJoystick = new CommandJoystick(Hardware.SECOND_JOYSTICK_PORT);
 
   private final Controller controller = new TankController(
-      () -> -xbox.getLeftY(),
-      () -> -xbox.getRightY(),
+      // () -> -xbox.getLeftY(),
+      // () -> -xbox.getRightY(),
 
-      // () -> leftJoystick.getY(),
-      // () -> -rightJoystick.getY(),
+      () -> -leftJoystick.getY(),
+      () -> -rightJoystick.getY(),
 
       DriverProfile.current.deadzone,
       DriverProfile.current.precisionExponent);
@@ -86,14 +86,14 @@ public class Robot extends TimedRobot {
 
     anyTrigger(xbox.leftTrigger(0.1), leftJoystick.trigger())
         .whileTrue(shooter.intake());
-    anyTrigger(xbox.rightTrigger(0.1), rightJoystick.trigger())
+    anyTrigger(xbox.rightTrigger(0.1))
         .whileTrue(shooter.launch());
-    anyTrigger(xbox.rightBumper(), rightJoystick.button(0))
+    anyTrigger(xbox.rightBumper())
         .whileTrue(shooter.spinUpFlywheel());
-    anyTrigger(xbox.a())
+    anyTrigger(xbox.a(), rightJoystick.trigger())
         .whileTrue(shooter.launchSequence());
 
-    anyTrigger(xbox.y(), rightJoystick.button(1))
+    anyTrigger(xbox.y(), leftJoystick.button(5))
         .whileTrue(Commands.startEnd(() -> amp.setPneumatic(), () -> amp.stopPneumatic()));
   }
 
