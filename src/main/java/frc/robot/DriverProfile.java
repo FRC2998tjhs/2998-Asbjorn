@@ -31,12 +31,4 @@ public class DriverProfile {
 
         return result;
     }
-
-    public double transformLeftJoystick(double y) {
-        throw new UnsupportedOperationException("Unimplemented method 'transformLeftJoystick'");
-    }
-
-    public Object transformRightJoystick(double y) {
-        throw new UnsupportedOperationException("Unimplemented method 'transformRightJoystick'");
-    }
 }
