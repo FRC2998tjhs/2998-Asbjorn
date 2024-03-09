@@ -1,12 +1,12 @@
-package frc.lib.utils;
+package frc;
 
 // import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 // import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 
 /**
- * Class for a tunable number. Gets value from dashboard in tuning mode, returns default if not or
- * value not in dashboard.
+ * Gets value from dashboard in tuning mode, returns default if value not in
+ * dashboard.
  */
 public class TunableNumber {
   private static final String tableKey = "TunableNumbers";
@@ -73,7 +73,8 @@ public class TunableNumber {
   /**
    * Checks whether the number has changed since our last check
    * 
-   * @return True if the number has changed since the last time this method was called, false
+   * @return True if the number has changed since the last time this method was
+   *         called, false
    *         otherwise
    */
   public boolean hasChanged() {
