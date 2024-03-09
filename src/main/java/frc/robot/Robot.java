@@ -4,173 +4,142 @@
 
 package frc.robot;
 
+import edu.wpi.first.wpilibj.Compressor;
+import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import frc.robot.subsystems.drive.Drive;
-import frc.robot.subsystems.shooter.Shooter;
-import frc.robot.subsystems.pneumatics.Pneumatics;
-import frc.lib.utils.TunableNumber;
-import frc.robot.subsystems.compresser.Compresser;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.TunableNumber;
+import frc.robot.controller.Controller;
+import frc.robot.controller.TankController;
+import frc.robot.kinematics.Speeds;
+import frc.robot.motor.LeaderFollower;
+import frc.robot.motor.Motor;
+import frc.robot.motor.Reverse;
 
-/**
- * This is a demo program showing the use of the DifferentialDrive class. Runs
- * the motors with
- * arcade steering.
- */
 public class Robot extends TimedRobot {
-
-  private final Compresser m_compresser = new Compresser(7);
-
-  private final Pneumatics m_gearShift = new Pneumatics(3, 2, 7);
-
-  private final Pneumatics m_ampPneumatics = new Pneumatics(1, 0, 7);
-
-  // grabs drive2's drive function
-  private final Drive m_drive = new Drive(1, 2, 3, 4, m_gearShift);
-  // grabs Shooters Shooter function
-  private final Shooter m_shooter = new Shooter(5, 6);
-  // asings the controller
-  private final CommandXboxController m_controller = new CommandXboxController(0);
-
-  private final CommandJoystick leftController = new CommandJoystick(0);
-  private final CommandJoystick rightController = new CommandJoystick(1);
-
-  // sets up for command schedualer?
-  private Command autonomousCommandDrive;
-  private Command autonomousCommandShootAndDrive;
-  private Command autonomousCommandShootAndDriveReverse;
-  private Command autonomousCommandShoot;
-  private Command autonomousCommandAmp;
-  private Command autonomousCommand;
-
-  public Robot() {
-    // SendableRegistry.addChild(m_robotDrive, m_leftMotor);
-    // SendableRegistry.addChild(m_robotDrive, m_rightMotor);
-  }
-
   public static final TunableNumber kAutonomousMode = new TunableNumber("AutoMode", 1, "AutoMode");
 
-  @Override
-  public void autonomousInit() {
-    autonomousCommandDrive = Commands.sequence(
-        setDirection(0.0, -0.6),
-        Commands.waitSeconds(4),
-        setDirection(0.0, 0.0));
+  @SuppressWarnings("unused")
+  // TODO: Probably should remove.
+  private final Compressor compresser = new Compressor(Hardware.COMPRESSOR_PORT, PneumaticsModuleType.CTREPCM);
 
-    autonomousCommandShootAndDrive = Commands.sequence(
-        m_shooter.toggleFlywheel(),
-        Commands.waitSeconds(2),
-        Commands.runOnce(() -> m_shooter.setPositionerVoltage(8.0)),
-        Commands.waitSeconds(1),
-        m_shooter.toggleFlywheel(),
-        Commands.runOnce(() -> m_shooter.setPositionerVoltage(0.0)),
-        setDirection(0.0, 0.7),
-        Commands.waitSeconds(1),
-        setDirection(-0.4, 0.0),
-        Commands.waitSeconds(2),
-        setDirection(0.0, 0.7),
-        Commands.waitSeconds(3),
-        setDirection(0.0, 0.0));
+  private final Pneumatics amp = new Pneumatics(Hardware.AMP_UP_PORT, Hardware.AMP_DOWN_PORT, Hardware.PMC_PORT);
 
-    autonomousCommandShoot = Commands.sequence(
-        Commands.waitSeconds(1),
-        m_shooter.toggleFlywheel(),
-        Commands.waitSeconds(2),
-        Commands.runOnce(() -> m_shooter.setPositionerVoltage(8.0)),
-        Commands.waitSeconds(5),
-        m_shooter.toggleFlywheel(),
-        Commands.runOnce(() -> m_shooter.setPositionerVoltage(0.0)));
+  private final Shooter shooter = new Shooter(Hardware.FLYWHEEL_PORT, Hardware.POSITIONER_PORT);
 
-    autonomousCommandShootAndDriveReverse = Commands.sequence(m_shooter.toggleFlywheel(),
-        Commands.waitSeconds(2),
-        Commands.runOnce(() -> m_shooter.setPositionerVoltage(8.0)),
-        Commands.waitSeconds(1),
-        m_shooter.toggleFlywheel(),
-        Commands.runOnce(() -> m_shooter.setPositionerVoltage(0.0)),
-        setDirection(0.0, 0.6),
-        Commands.waitSeconds(1),
-        setDirection(0.4, 0.0),
-        Commands.waitSeconds(2),
-        setDirection(0.0, 0.7),
-        Commands.waitSeconds(3),
-        setDirection(0.0, 0.0));
+  private final CommandXboxController xbox = new CommandXboxController(Hardware.XBOX_CONTROLLER_PORT);
+  private final CommandJoystick leftJoystick = new CommandJoystick(Hardware.FIRST_JOYSTICK_PORT);
+  private final CommandJoystick rightJoystick = new CommandJoystick(Hardware.SECOND_JOYSTICK_PORT);
 
-    autonomousCommandAmp = Commands.sequence(m_gearShift.setPneumaticCommand(true),
-        Commands.waitSeconds(2),
-        m_gearShift.setPneumaticCommand(false),
-        setDirection(0.5, -0.1),
-        Commands.waitSeconds(2),
-        setDirection(0.0, -0.5),
-        Commands.waitSeconds(4),
-        setDirection(0.0, 0.0));
+  private final Controller controller = new TankController(
+      () -> leftJoystick.getY(),
+      () -> rightJoystick.getY(),
+      DriverProfile.current.deadzone,
+      DriverProfile.current.precisionExponent);
 
-    autonomousCommand = autonomousCommandShoot;
+  private final Pneumatics gearShift = new Pneumatics(Hardware.GEAR_SHIFT_HIGH_PORT, Hardware.GEAR_SHIFT_LOW_PORT,
+      Hardware.PMC_PORT);
 
-    if (autonomousCommand != null) {
-      autonomousCommand.schedule();
-    }
-  }
+  private final DriveTrain driveTrain = new DriveTrain(DriverProfile.current, Hardware.GEAR_RATIO);
 
-  private Command setDirection(double x, double y) {
-    return Commands.runOnce(() -> m_drive.linkController(() -> x, () -> y));
-  }
+  // We need to invert one side of the drivetrain so that positive voltages
+  // result in both sides moving forward. Depending on how your robot's
+  // gearbox is constructed, you might have to invert the left side instead.
+  private Motor leftDrive = new Reverse(
+      new LeaderFollower(Hardware.LEFT_LEADER_PORT, Hardware.LEFT_FOLLOWER_PORT));
+  private Motor rightDrive = new LeaderFollower(Hardware.RIGHT_LEADER_PORT, Hardware.RIGHT_FOLLOWER_PORT);
+
+  private Speeds lastSpeeds = new Speeds();
+
+  private Gear currentGear;
+  private boolean shifting = false;
 
   @Override
   public void robotInit() {
-
-    // We need to invert one side of the drivetrain so that positive voltages
-    // result in both sides moving forward. Depending on how your robot's
-    // gearbox is constructed, you might have to invert the left side instead.
-
-    // uses the linkController function in Drive2 to set the control variables
-
+    shiftTo(Gear.LOW).schedule();
   }
 
-  // runs command schedualer
+  private Command shiftTo(Gear gear) {
+    if (this.shifting) {
+      // TODO : Should throw exception during testing.
+      return Commands.none();
+    }
+
+    return Commands.sequence(
+        Commands.runOnce(() -> gearShift.setIf(gear == Gear.HIGH)),
+        Commands.waitSeconds(Hardware.BEGIN_SHIFT_WAIT_S),
+        Commands.runOnce(() -> {
+          this.shifting = true;
+          leftDrive.set(0);
+          rightDrive.set(0);
+        }),
+        Commands.waitSeconds(Hardware.SHIFT_DURATION_S),
+        Commands.runOnce(() -> {
+          this.shifting = false;
+          this.currentGear = gear;
+        }));
+  }
+
   @Override
   public void robotPeriodic() {
     CommandScheduler.getInstance().run();
   }
 
-  // ?
   @Override
-  public void teleopInit() {
-    if (autonomousCommand != null) {
-      autonomousCommand.cancel();
-    }
-
-    m_drive.linkController(() -> leftController.getY(), () -> -rightController.getY() * 1.1);
-    // TODO(shelbyd): Remove this?
-    // m_controller.leftBumper().onTrue(m_gearShift.setPneumaticCommand(true))
-    //     .onFalse(m_gearShift.setPneumaticCommand(false));
-
-    // m_controller.leftTrigger(0.1).whileTrue(m_shooter.intakePositioner());
-    // m_controller.rightTrigger(0.1).whileTrue(m_shooter.exitPositioner());
-    // m_controller.rightBumper().onTrue(m_shooter.toggleFlywheel());
-
-    // m_controller.y().onTrue(m_ampPneumatics.scoreAmp());
-  }
-
-  // it starts arcade drive. LEARN TO READ.
-  @Override
-  public void teleopPeriodic() {
-    // Drive with arcade drive.
-    // That means that the Y axis drives forward
-    // and backward, and the X turns left and right.
-    // System.out.println("Test");
-    m_drive.arcadeAutoGearshift();
-    // System.out.println(m_pneumatics.getSolinoidChannels());
-    // System.out.println(m_compresser.GetEnabled());
-    // System.out.println(m_controller.getLeftY() + " " + m_controller.getLeftX());
-
+  public void autonomousInit() {
   }
 
   @Override
   public void autonomousPeriodic() {
-    m_drive.arcadeAutoGearshift();
+  }
+
+  @Override
+  public void teleopInit() {
+    anyTrigger(xbox.leftTrigger(0.1), leftJoystick.trigger())
+        .whileTrue(shooter.intake());
+    anyTrigger(xbox.rightTrigger(0.1), rightJoystick.trigger())
+        .whileTrue(shooter.launch());
+    anyTrigger(xbox.rightBumper(), rightJoystick.button(0))
+        .onTrue(shooter.toggleFlywheel());
+
+    anyTrigger(xbox.y(), rightJoystick.button(1))
+        .whileTrue(Commands.startEnd(() -> amp.setPneumatic(), () -> amp.stopPneumatic()));
+  }
+
+  private Trigger anyTrigger(Trigger... triggers) {
+    return new Trigger(() -> {
+      for (Trigger trigger : triggers) {
+        if (trigger.getAsBoolean())
+          return true;
+      }
+      return false;
+    });
+  }
+
+  @Override
+  public void teleopPeriodic() {
+    movementPeriodic();
+  }
+
+  private void movementPeriodic() {
+    if (this.shifting) {
+      return;
+    }
+
+    var desiredSpeeds = controller.desiredSpeeds();
+
+    var activity = driveTrain.towardSpeeds(desiredSpeeds, lastSpeeds, getPeriod(), currentGear);
+    if (activity.shiftTo != null) {
+      shiftTo(activity.shiftTo).schedule();
+    }
+
+    lastSpeeds = activity.logicalSpeeds;
+    leftDrive.set(activity.motorSpeeds().left);
+    rightDrive.set(activity.motorSpeeds().right);
   }
 }
