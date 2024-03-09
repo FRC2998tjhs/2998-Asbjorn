@@ -30,15 +30,15 @@ public class Robot extends TimedRobot {
 
   private final Pneumatics amp = new Pneumatics(Hardware.AMP_UP_PORT, Hardware.AMP_DOWN_PORT, Hardware.PMC_PORT);
 
-  private final Shooter shooter = new Shooter(Hardware.FLYWHEEL_PORT, Hardware.POSITIONER_PORT);
+  private final Shooter shooter = new Shooter(Hardware.FLYWHEEL_PORT, Hardware.POSITIONER_PORT, Hardware.TIME_TO_MAX_FLYWHEEL);
 
   private final CommandXboxController xbox = new CommandXboxController(Hardware.XBOX_CONTROLLER_PORT);
   private final CommandJoystick leftJoystick = new CommandJoystick(Hardware.FIRST_JOYSTICK_PORT);
   private final CommandJoystick rightJoystick = new CommandJoystick(Hardware.SECOND_JOYSTICK_PORT);
 
   private final Controller controller = new TankController(
-      () -> leftJoystick.getY(),
-      () -> rightJoystick.getY(),
+      () -> -xbox.getLeftY(),
+      () -> -xbox.getRightY(),
       DriverProfile.current.deadzone,
       DriverProfile.current.precisionExponent);
 
@@ -105,7 +105,9 @@ public class Robot extends TimedRobot {
     anyTrigger(xbox.rightTrigger(0.1), rightJoystick.trigger())
         .whileTrue(shooter.launch());
     anyTrigger(xbox.rightBumper(), rightJoystick.button(0))
-        .onTrue(shooter.toggleFlywheel());
+        .whileTrue(shooter.spinUpFlywheel());
+    anyTrigger(xbox.a())
+        .whileTrue(shooter.launchSequence());
 
     anyTrigger(xbox.y(), rightJoystick.button(1))
         .whileTrue(Commands.startEnd(() -> amp.setPneumatic(), () -> amp.stopPneumatic()));

@@ -6,7 +6,7 @@ public class DriverProfile {
     // In % max speed / s;
     public double maxAcceleration = 1.;
     public double deadzone = 0.15;
-    public double precisionExponent = 1.5;
+    public double precisionExponent = 2.;
 
     public double shiftUpAt = 0.9;
     public double shiftDownAt = 0.1;

@@ -1,6 +1,7 @@
 package frc.robot;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.kinematics.Speeds;
 
 public class DriveTrain {
@@ -43,12 +44,19 @@ public class DriveTrain {
         result.logicalSpeeds.left = accelerateTo(desiredSpeeds.left, lastSpeeds.left, deltaTime);
         result.logicalSpeeds.right = accelerateTo(desiredSpeeds.right, lastSpeeds.right, deltaTime);
 
+        SmartDashboard.putNumber("Left Speed", result.logicalSpeeds.left);
+        SmartDashboard.putNumber("Right Speed", result.logicalSpeeds.right);
+
         var extremeSpeed = Math.max(Math.abs(result.motorSpeeds().left), Math.abs(result.motorSpeeds().right));
+        Gear desiredGear = null;
         if (extremeSpeed >= profile.shiftUpAt) {
-            result.shiftTo = Gear.HIGH;
+            desiredGear = Gear.HIGH;
         }
         if (extremeSpeed <= profile.shiftDownAt) {
-            result.shiftTo = Gear.LOW;
+            desiredGear = Gear.LOW;
+        }
+        if (currentGear != desiredGear) {
+            result.shiftTo = desiredGear;
         }
 
         return result;

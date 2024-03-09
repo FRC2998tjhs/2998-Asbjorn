@@ -27,4 +27,6 @@ public class Hardware {
     public static final double SHIFT_DURATION_S = 0.03;
 
     public static final double GEAR_RATIO = 2.27;
+
+    public static final double TIME_TO_MAX_FLYWHEEL = 1.5;
 }

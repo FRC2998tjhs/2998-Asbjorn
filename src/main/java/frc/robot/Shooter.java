@@ -3,6 +3,8 @@ package frc.robot;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -10,12 +12,20 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 public class Shooter extends SubsystemBase {
     private CANSparkMax flywheel;
     private CANSparkMax positioner;
-    private boolean flywheelEnabled;
 
-    public Shooter(int flywheelPort, int positionerPort) {
+    private Timer timer = new Timer();
+
+    private double timeToMaxFlywheel;
+    private Double flywheelLaunchingSince = null;
+
+    public Shooter(int flywheelPort, int positionerPort, double timeToMaxFlywheel) {
         flywheel = new CANSparkMax(flywheelPort, MotorType.kBrushless);
         positioner = new CANSparkMax(positionerPort, MotorType.kBrushless);
-        flywheelEnabled = false;
+
+        this.timeToMaxFlywheel = timeToMaxFlywheel;
+
+        disableAll();
+        timer.start();
     }
 
     public void setFlywheelVoltage(double voltage) {
@@ -31,10 +41,12 @@ public class Shooter extends SubsystemBase {
             setPositionerVoltage(-4);
             setFlywheelVoltage(-4);
         },
-                () -> {
-                    setPositionerVoltage(0);
-                    setFlywheelVoltage(0);
-                });
+                () -> disableAll());
+    }
+
+    private void disableAll() {
+        setPositionerVoltage(0);
+        disableFlywheel();
     }
 
     public Command launch() {
@@ -42,16 +54,36 @@ public class Shooter extends SubsystemBase {
                 () -> setPositionerVoltage(0));
     }
 
-    // TODO: Instead of toggle, should this be a launch sequence?
-    public Command toggleFlywheel() {
-        return Commands.runOnce(() -> {
-            flywheelEnabled = !flywheelEnabled;
-            if (flywheelEnabled) {
-                setFlywheelVoltage(12);
-            } else {
-                setFlywheelVoltage(0);
-            }
-        });
+    private void disableFlywheel() {
+        flywheelLaunchingSince = null;
+        setFlywheelVoltage(0);
     }
 
+    private double flywheelLaunchingFor() {
+        if (flywheelLaunchingSince == null) {
+            return 0.;
+        }
+        return timer.get() - flywheelLaunchingSince;
+    }
+
+    private void setFlywheelToLaunch() {
+        if (flywheelLaunchingSince == null) {
+            flywheelLaunchingSince = timer.get();
+        }
+
+        setFlywheelVoltage(12);
+    }
+
+    public Command spinUpFlywheel() {
+        return Commands.runEnd(() -> setFlywheelToLaunch(), () -> disableFlywheel());
+    }
+
+    public Command launchSequence() {
+        return Commands.sequence(
+                Commands.runOnce(() -> setFlywheelToLaunch()),
+                Commands.waitUntil(() -> flywheelLaunchingFor() >= timeToMaxFlywheel),
+                Commands.runOnce(() -> setPositionerVoltage(8)),
+                Commands.waitSeconds(0.2))
+                .finallyDo(() -> disableAll());
+    }
 }
