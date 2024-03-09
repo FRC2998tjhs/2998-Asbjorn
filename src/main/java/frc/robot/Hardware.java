@@ -15,10 +15,10 @@ public class Hardware {
 
     public static final int PMC_PORT = 7;
 
-    public static final int LEFT_LEADER_PORT = 1;
-    public static final int LEFT_FOLLOWER_PORT = 2;
-    public static final int RIGHT_LEADER_PORT = 3;
-    public static final int RIGHT_FOLLOWER_PORT = 4;
+    public static final int LEFT_LEADER_PORT = 3;
+    public static final int LEFT_FOLLOWER_PORT = 4;
+    public static final int RIGHT_LEADER_PORT = 1;
+    public static final int RIGHT_FOLLOWER_PORT = 2;
 
     public static final int FLYWHEEL_PORT = 5;
     public static final int POSITIONER_PORT = 6;
