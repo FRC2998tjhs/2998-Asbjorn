@@ -2,6 +2,8 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Pneumatics extends SubsystemBase {
@@ -26,5 +28,13 @@ public class Pneumatics extends SubsystemBase {
         } else {
             stopPneumatic();
         }
+    }
+
+    public Command activateFor(double s) {
+        return Commands.sequence(
+            Commands.runOnce(() -> setPneumatic()),
+            Commands.waitSeconds(s),
+            Commands.runOnce(() -> stopPneumatic())
+        );
     }
 }

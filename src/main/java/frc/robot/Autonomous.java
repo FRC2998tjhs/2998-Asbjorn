@@ -9,11 +9,12 @@ import frc.robot.kinematics.Speeds;
 
 public class Autonomous {
     private static final double STOP_WITHIN = 0.05;
-    private static final double MAX_MOVEMENT_POWER = 0.1;
+    private static final double MAX_MOVEMENT_POWER = 0.3;
     // TODO: Depends on maxAcceleration, so maybe should be somewhere else.
     private static final double BRAKING_DISTANCE = 1.5;
 
     private static final double STOP_WITHIN_DEGREES = 2;
+    // TODO: Why does this affect how much it turns?
     private static final double MAX_ROTATION_POWER = 0.1;
     private static final double BRAKING_DEGREES = 30;
     private static final double ROTATION_ERROR_FACTOR = 1.;
@@ -21,13 +22,15 @@ public class Autonomous {
     private Movement movement;
     private double deltaTime;
     private Shooter shooter;
+    private Pneumatics amp;
 
     private Command command;
 
-    public Autonomous(Movement movement, double deltaTime, Shooter shooter) {
+    public Autonomous(Movement movement, double deltaTime, Shooter shooter, Pneumatics amp) {
         this.movement = movement;
         this.deltaTime = deltaTime;
         this.shooter = shooter;
+        this.amp = amp;
     }
 
     public void init() {
@@ -46,8 +49,22 @@ public class Autonomous {
     }
 
     private Command program() {
+        var startToAmpLong = 1.0;
+        var startToAmpShort = 0.5;
+        var rotateToAmp = -90;
+        var startToBlack = 2;
+
         return Commands.sequence(
-                move(1.)
+                move(-startToAmpLong),
+                rotate(rotateToAmp),
+                move(-startToAmpShort),
+                amp.activateFor(0.75),
+                move(startToAmpShort),
+                rotate(180 - rotateToAmp),
+                move(startToBlack - startToAmpLong),
+                Commands.waitSeconds(5),
+                rotate(180),
+                move(startToBlack)
         // shooter.launchSequence(),
         // rotate(90),
         // move(2.)
@@ -101,7 +118,7 @@ public class Autonomous {
                     var speed = new Speeds(-percentOfBrakingDegrees, percentOfBrakingDegrees);
 
                     var actualSpeed = movement.move(speed, deltaTime);
-                    var distanceMoved = actualSpeed.right * deltaTime * Hardware.ONE_SECOND_MAX_POWER_M;
+                    var distanceMoved = actualSpeed.right * deltaTime * Hardware.ONE_SECOND_MAX_POWER_M / 2;
                     var actualRotation = distanceMoved / (2 * Math.PI * Hardware.DISTANCE_FROM_CENTER_TO_WHEEL) * 360
                             * ROTATION_ERROR_FACTOR;
                     rotated.set(rotated.get() + actualRotation);

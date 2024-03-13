@@ -54,7 +54,7 @@ public class Robot extends TimedRobot {
   Motor rightDrive = new LeaderFollower(Hardware.RIGHT_LEADER_PORT, Hardware.RIGHT_FOLLOWER_PORT);
 
   private Movement movement = new Movement(leftDrive, rightDrive, gearShift, driveTrain);
-  private Autonomous auto = new Autonomous(movement, getPeriod(), shooter);
+  private Autonomous auto = new Autonomous(movement, getPeriod(), shooter, amp);
 
   @Override
   public void robotInit() {
