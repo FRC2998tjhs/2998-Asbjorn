@@ -32,4 +32,10 @@ public class Hardware {
     public static final double GEAR_RATIO = 2.27;
 
     public static final double TIME_TO_MAX_FLYWHEEL = 1.;
+
+    public static final double DISTANCE_FROM_WHEEL_TO_WHEEL = 0.57785;
+    public static final double DISTANCE_FROM_CENTER_TO_WHEEL = DISTANCE_FROM_WHEEL_TO_WHEEL/2;
+
+    // Tune with actual robot.
+    static final double ONE_SECOND_MAX_POWER_M = 6.;
 }

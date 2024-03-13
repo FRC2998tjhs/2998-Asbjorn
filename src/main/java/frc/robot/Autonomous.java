@@ -1,21 +1,33 @@
 package frc.robot;
 
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BooleanSupplier;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.kinematics.Speeds;
 
 public class Autonomous {
+    private static final double STOP_WITHIN = 0.05;
+    private static final double MAX_MOVEMENT_POWER = 0.1;
+    // TODO: Depends on maxAcceleration, so maybe should be somewhere else.
+    private static final double BRAKING_DISTANCE = 1.5;
+
+    private static final double STOP_WITHIN_DEGREES = 2;
+    private static final double MAX_ROTATION_POWER = 0.1;
+    private static final double BRAKING_DEGREES = 30;
+    private static final double ROTATION_ERROR_FACTOR = 1.;
+
     private Movement movement;
     private double deltaTime;
+    private Shooter shooter;
 
     private Command command;
 
-    public Autonomous(Movement movement, double deltaTime) {
+    public Autonomous(Movement movement, double deltaTime, Shooter shooter) {
         this.movement = movement;
         this.deltaTime = deltaTime;
+        this.shooter = shooter;
     }
 
     public void init() {
@@ -35,26 +47,66 @@ public class Autonomous {
 
     private Command program() {
         return Commands.sequence(
-                moveForward(Field.ROBOT_STARTING_ZONE_WIDTH + 0.5));
+                move(1.)
+        // shooter.launchSequence(),
+        // rotate(90),
+        // move(2.)
+        );
     }
 
-    private Command moveForward(double distance) {
+    private Command move(double distanceM) {
         var traveled = new AtomicReference<Double>(0.);
-        // TODO: Make stopping zone configurable.
-        var stopAt = distance - 0.5;
 
         return Commands.sequence(
-            Commands.waitUntil(() -> {
-                var actualSpeed = movement.move(new Speeds(1., 1.), deltaTime);
-                // Since we're moving forward, left == right.
-                traveled.set(traveled.get() + actualSpeed.left * deltaTime);
-                return traveled.get() >= stopAt;
-            }),
-            // TODO: Make this more adaptive to actual movement.
-            Commands.waitUntil(() -> {
-                movement.move(new Speeds(), deltaTime);
-                return !movement.isMoving();
-            })
-        );
+                Commands.waitUntil(() -> {
+                    var error = distanceM - traveled.get();
+                    // TODO: Get rid of this?
+                    if (Math.abs(error) < STOP_WITHIN) {
+                        return true;
+                    }
+
+                    var percentOfBrakingDistance = MathUtil.clamp(error / BRAKING_DISTANCE, -MAX_MOVEMENT_POWER,
+                            MAX_MOVEMENT_POWER);
+                    var speed = new Speeds(percentOfBrakingDistance, percentOfBrakingDistance);
+
+                    var actualSpeed = movement.move(speed, deltaTime);
+                    var actualMovement = actualSpeed.left * deltaTime * Hardware.ONE_SECOND_MAX_POWER_M;
+                    traveled.set(traveled.get() + actualMovement);
+
+                    return false;
+                }),
+                stop());
+    }
+
+    private Command stop() {
+        return Commands.waitUntil(() -> {
+            movement.move(new Speeds(), deltaTime);
+            return !movement.isMoving();
+        });
+    }
+
+    private Command rotate(double degrees) {
+        var rotated = new AtomicReference<Double>(0.);
+
+        return Commands.sequence(
+                Commands.waitUntil(() -> {
+                    var error = degrees - rotated.get();
+                    // TODO: Get rid of this?
+                    if (Math.abs(error) < STOP_WITHIN_DEGREES) {
+                        return true;
+                    }
+
+                    var percentOfBrakingDegrees = MathUtil.clamp(error / BRAKING_DEGREES, -MAX_ROTATION_POWER,
+                            MAX_ROTATION_POWER);
+                    var speed = new Speeds(-percentOfBrakingDegrees, percentOfBrakingDegrees);
+
+                    var actualSpeed = movement.move(speed, deltaTime);
+                    var distanceMoved = actualSpeed.right * deltaTime * Hardware.ONE_SECOND_MAX_POWER_M;
+                    var actualRotation = distanceMoved / (2 * Math.PI * Hardware.DISTANCE_FROM_CENTER_TO_WHEEL) * 360
+                            * ROTATION_ERROR_FACTOR;
+                    rotated.set(rotated.get() + actualRotation);
+
+                    return false;
+                }), stop());
     }
 }

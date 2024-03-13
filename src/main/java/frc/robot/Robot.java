@@ -36,11 +36,8 @@ public class Robot extends TimedRobot {
   private final CommandJoystick rightJoystick = new CommandJoystick(Hardware.SECOND_JOYSTICK_PORT);
 
   private final Controller controller = new TankController(
-      // () -> -xbox.getLeftY(),
-      // () -> -xbox.getRightY(),
-
-      () -> -leftJoystick.getY(),
-      () -> -rightJoystick.getY(),
+      () -> -leftJoystick.getY() + -xbox.getLeftY(),
+      () -> -rightJoystick.getY() + -xbox.getRightY(),
 
       DriverProfile.current.deadzone,
       DriverProfile.current.precisionExponent);
@@ -57,7 +54,7 @@ public class Robot extends TimedRobot {
   Motor rightDrive = new LeaderFollower(Hardware.RIGHT_LEADER_PORT, Hardware.RIGHT_FOLLOWER_PORT);
 
   private Movement movement = new Movement(leftDrive, rightDrive, gearShift, driveTrain);
-  private Autonomous auto = new Autonomous(movement, getPeriod());
+  private Autonomous auto = new Autonomous(movement, getPeriod(), shooter);
 
   @Override
   public void robotInit() {
