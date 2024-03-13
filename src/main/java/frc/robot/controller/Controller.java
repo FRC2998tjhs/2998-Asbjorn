@@ -18,6 +18,7 @@ public abstract class Controller {
         if (v < 0) {
             return -deadzoneAndSmooth(-v);
         }
+
         if (v < deadzone) {
             return 0.;
         }

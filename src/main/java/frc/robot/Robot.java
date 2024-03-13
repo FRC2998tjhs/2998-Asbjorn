@@ -12,22 +12,21 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import frc.TunableNumber;
 import frc.robot.controller.Controller;
 import frc.robot.controller.TankController;
-import frc.robot.kinematics.Speeds;
 import frc.robot.motor.LeaderFollower;
 import frc.robot.motor.Motor;
 import frc.robot.motor.Reverse;
+import frc.robot.kinematics.Speeds;
 
 public class Robot extends TimedRobot {
-  public static final TunableNumber kAutonomousMode = new TunableNumber("AutoMode", 1, "AutoMode");
 
   @SuppressWarnings("unused")
   // TODO: Probably should remove.
   private final Compressor compresser = new Compressor(Hardware.COMPRESSOR_PORT, PneumaticsModuleType.CTREPCM);
 
   private final Pneumatics amp = new Pneumatics(Hardware.AMP_UP_PORT, Hardware.AMP_DOWN_PORT, Hardware.PMC_PORT);
+  private final Pneumatics lift = new Pneumatics(Hardware.LIFT_UP_PORT, Hardware.LIFT_DOWN_PORT, Hardware.PMC_PORT);
 
   private final Shooter shooter = new Shooter(Hardware.FLYWHEEL_PORT, Hardware.POSITIONER_PORT,
       Hardware.TIME_TO_MAX_FLYWHEEL);
@@ -95,6 +94,8 @@ public class Robot extends TimedRobot {
 
     anyTrigger(xbox.y(), leftJoystick.button(5))
         .whileTrue(Commands.startEnd(() -> amp.setPneumatic(), () -> amp.stopPneumatic()));
+    anyTrigger(xbox.x(), leftJoystick.button(6))
+        .whileTrue(Commands.startEnd(() -> lift.setPneumatic(), () -> lift.stopPneumatic()));
   }
 
   private Trigger anyTrigger(Trigger... triggers) {

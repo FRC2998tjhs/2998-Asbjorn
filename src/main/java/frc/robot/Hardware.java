@@ -9,6 +9,9 @@ public class Hardware {
     public static final int AMP_UP_PORT = 1;
     public static final int AMP_DOWN_PORT = 0;
 
+    public static final int LIFT_UP_PORT = 5;
+    public static final int LIFT_DOWN_PORT = 4;
+
     public static final int FIRST_JOYSTICK_PORT = 0;
     public static final int SECOND_JOYSTICK_PORT = 1;
     public static final int XBOX_CONTROLLER_PORT = 2;
