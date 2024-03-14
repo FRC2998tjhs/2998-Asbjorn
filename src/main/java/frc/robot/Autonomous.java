@@ -3,6 +3,7 @@ package frc.robot;
 import java.util.concurrent.atomic.AtomicReference;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.kinematics.Speeds;
@@ -22,11 +23,11 @@ public class Autonomous {
     private Movement movement;
     private double deltaTime;
     private Shooter shooter;
-    private Pneumatics amp;
+    private Solenoid amp;
 
     private Command command;
 
-    public Autonomous(Movement movement, double deltaTime, Shooter shooter, Pneumatics amp) {
+    public Autonomous(Movement movement, double deltaTime, Shooter shooter, Solenoid amp) {
         this.movement = movement;
         this.deltaTime = deltaTime;
         this.shooter = shooter;
@@ -61,12 +62,20 @@ public class Autonomous {
                 move(-startToAmpLong),
                 rotate(-90),
                 move(-startToAmpShort),
-                amp.activateFor(0.75),
+                ampFor(0.75),
                 move(startToAmpShort),
                 rotate(-90),
                 move(startToBlack - startToAmpLong)
         );
 
+    }
+
+    private Command ampFor(double d) {
+        return Commands.sequence(
+            Commands.runOnce(() -> amp.set(true)),
+            Commands.waitSeconds(d),
+            Commands.runOnce(() -> amp.set(false))
+        );
     }
 
     private Command move(double distanceM) {

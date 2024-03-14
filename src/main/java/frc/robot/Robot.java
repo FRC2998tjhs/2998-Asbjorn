@@ -4,9 +4,16 @@
 
 package frc.robot;
 
+import com.revrobotics.CANSparkLowLevel.MotorType;
+import com.revrobotics.CANSparkMax;
+
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
+import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
@@ -25,10 +32,10 @@ public class Robot extends TimedRobot {
   // TODO: Probably should remove.
   private final Compressor compresser = new Compressor(Hardware.COMPRESSOR_PORT, PneumaticsModuleType.CTREPCM);
 
-  private final Pneumatics amp = new Pneumatics(Hardware.AMP_UP_PORT, Hardware.AMP_DOWN_PORT, Hardware.PMC_PORT);
-  private final Pneumatics lift = new Pneumatics(Hardware.LIFT_UP_PORT, Hardware.LIFT_DOWN_PORT, Hardware.PMC_PORT);
+  private final Solenoid amp = new Solenoid(Hardware.PMC_PORT, PneumaticsModuleType.CTREPCM, Hardware.AMP_PORT);
+  private final Solenoid lift = new Solenoid(Hardware.PMC_PORT, PneumaticsModuleType.CTREPCM, Hardware.LIFT_PORT);
 
-  private final Shooter shooter = new Shooter(Hardware.FLYWHEEL_PORT, Hardware.POSITIONER_PORT,
+  private final Shooter shooter = new Shooter(Hardware.FLYWHEEL_PORTS, Hardware.POSITIONER_PORT,
       Hardware.TIME_TO_MAX_FLYWHEEL);
 
   private final CommandXboxController xbox = new CommandXboxController(Hardware.XBOX_CONTROLLER_PORT);
@@ -90,9 +97,9 @@ public class Robot extends TimedRobot {
         .whileTrue(shooter.launchSequence());
 
     anyTrigger(xbox.y(), leftJoystick.button(5))
-        .whileTrue(Commands.startEnd(() -> amp.setPneumatic(), () -> amp.stopPneumatic()));
+        .whileTrue(Commands.startEnd(() -> amp.set(true), () -> amp.set(false)));
     anyTrigger(xbox.x(), leftJoystick.button(6))
-        .whileTrue(Commands.startEnd(() -> lift.setPneumatic(), () -> lift.stopPneumatic()));
+        .whileTrue(Commands.startEnd(() -> lift.set(true), () -> lift.set(false)));
   }
 
   private Trigger anyTrigger(Trigger... triggers) {
