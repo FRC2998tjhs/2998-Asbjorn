@@ -49,26 +49,24 @@ public class Autonomous {
     }
 
     private Command program() {
+         return ampThenPastBlack();
+    }
+
+    private Command ampThenPastBlack() {
         var startToAmpLong = 1.0;
         var startToAmpShort = 0.5;
-        var rotateToAmp = -90;
         var startToBlack = 2;
 
         return Commands.sequence(
                 move(-startToAmpLong),
-                rotate(rotateToAmp),
+                rotate(-90),
                 move(-startToAmpShort),
                 amp.activateFor(0.75),
                 move(startToAmpShort),
-                rotate(180 - rotateToAmp),
-                move(startToBlack - startToAmpLong),
-                Commands.waitSeconds(5),
-                rotate(180),
-                move(startToBlack)
-        // shooter.launchSequence(),
-        // rotate(90),
-        // move(2.)
+                rotate(-90),
+                move(startToBlack - startToAmpLong)
         );
+
     }
 
     private Command move(double distanceM) {
