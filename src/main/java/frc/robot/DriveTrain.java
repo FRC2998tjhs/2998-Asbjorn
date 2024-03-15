@@ -47,9 +47,11 @@ public class DriveTrain {
         SmartDashboard.putNumber("Left Speed", result.logicalSpeeds.left);
         SmartDashboard.putNumber("Right Speed", result.logicalSpeeds.right);
 
+        var isTurning = (result.logicalSpeeds.left < 0 && result.logicalSpeeds.right > 0)||(result.logicalSpeeds.left > 0 && result.logicalSpeeds.right < 0);
+
         var extremeSpeed = Math.max(Math.abs(result.motorSpeeds().left), Math.abs(result.motorSpeeds().right));
         Gear desiredGear = null;
-        if (extremeSpeed >= profile.shiftUpAt) {
+        if (extremeSpeed >= profile.shiftUpAt && !isTurning) {
             desiredGear = Gear.HIGH;
         }
         if (extremeSpeed <= profile.shiftDownAt) {
